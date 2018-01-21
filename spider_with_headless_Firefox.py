@@ -10,19 +10,46 @@
     5.0 增加持续监控的能力，察觉变化并保存
         5.1 将 driver 改为无头浏览器（Firefox内核），添加了定时状态打印功能
     6.0 可以部署在服务器上
+        6.1 优化文件存储
 """
 
 from selenium import webdriver
-from time import ctime, sleep
-from datetime import datetime    # 在选择多文件保存时起效
+from time import sleep
+from datetime import datetime
 from selenium.webdriver.firefox.options import Options
-import sys
+import sys, os
 
 # Variations.
 # 引用需要声明全局变量。
 # ___ER___ https://weibo.cn/508637358
 second_domain = '508637358'
 weibo_name = '___ER___'
+
+
+def is_weibosave():
+    # 判断是否存在文件夹 weibosave，没有就创建一个
+    if os.path.exists('weibosave'):
+        pass
+    else:
+        os.mkdir('weibosave')
+
+
+def format_time_now():
+    ct = datetime.now()
+    time_now = '{}/{}/{}_{}:{}:{}'.format(ct.year, ct.month, ct.day, ct.hour, ct.minute, ct.second)
+    return time_now
+
+
+def format_weibo_save_time():
+    ct = datetime.now()
+    date_now = '{}_{}_{}'.format(ct.year, ct.month, ct.day)
+    return date_now
+
+
+def format_weibo_py_running_log_time():
+    ct = datetime.now()
+    hour_now = '{}_{}_{}@{}00'.format(ct.year, ct.month, ct.day, ct.hour)
+    return hour_now
 
 
 def get_content():
@@ -54,10 +81,10 @@ def get_content():
             ============
             忽略转发的图片，使用 last() 直接选取最后的转发内容，忽略中间的 div 元素
         '''
-        content = '@{}：{}\n{}：{}'.format(weibo_name, repo, orig_poster, orig_content)
+        content = '@{}：{}\r\n{}：{}'.format(weibo_name, repo, orig_poster, orig_content)
         content_time = driver.find_element_by_id("M_").find_element_by_xpath("div[last()]/span[2]").text
 
-    local_time = ctime()
+    local_time = format_time_now()
 
     # 返回三个值：本机抓取时间，发布时间，内容
     return local_time, content_time, content
@@ -117,6 +144,13 @@ def loginsina():
     driver.find_element_by_id("loginPassword").click()
     driver.find_element_by_id("loginPassword").send_keys(password)
     driver.find_element_by_id("loginAction").click()
+
+    log = '登陆成功！当前时间：{}。'.format(format_time_now())
+    print(log)
+    is_weibosave()
+    m = open('weibosave/weiboPY_running_log_{}.txt'.format(format_weibo_py_running_log_time()), 'a', encoding='utf-8')
+    m.write(log)
+    m.close()
     sleep(3)
     """
         输入文本框如果带有placeholder属性，则使用 .clear() 功能会报错：
@@ -140,6 +174,13 @@ def welcomesina():
     driver.find_element_by_id("loginPassword").click()
     driver.find_element_by_id("loginPassword").send_keys(password)
     driver.find_element_by_id("loginAction").click()
+
+    log = '登陆成功！当前时间：{}。'.format(format_time_now())
+    print(log)
+    is_weibosave()
+    m = open('weibosave/weiboPY_running_log_{}.txt'.format(format_weibo_py_running_log_time()), 'a', encoding='utf-8')
+    m.write(log)
+    m.close()
     sleep(3)
 
 
@@ -185,37 +226,35 @@ if __name__ == '__main__':
             j += 1
             if j % 10 == 0:
                 # 防止信息泛滥，每 10 条通报一次
-                log = '正在监控，已动态监测{}次，已捕捉到{}条动态。当前时间：{}。\n'.format(j, i, ctime())
-                l = open('file_log.txt', 'a', encoding='utf-8')
+                is_weibosave()
+                log = '正在监控，已动态监测{}次，已捕捉到{}条动态。当前时间：{}。\r\n'.format(j, i, format_time_now())
+                print(log)
+                l = open('weibosave/weiboPY_running_log_{}.txt'.format(format_weibo_py_running_log_time()), 'a', encoding='utf-8')
                 l.write(log)
                 l.close()
 
-            sleep(10)
+            sleep(15)
             continue
         else:
             driver.get(getlatestposturl()[0])
             # 获取页面内容
             post_info = get_content()
-            post_content = '抓取时间：{}\n微博时间：{}\n{}\n\n\n'.format(post_info[0], post_info[1], post_info[2][1:])
+            post_content = '抓取时间：{}\r\n微博时间：{}\r\n{}\r\n\r\n\r\n'.format(post_info[0], post_info[1], post_info[2][1:])
 
             # 更新 old_id 值
             old_id = post_id
 
-            # 写入文件（每条单独保存）
-            # current_time = datetime.strftime(datetime.now(), format('%Y_%m_%d-%H_%M_%S'))
-            # f = open('{}.txt'.format(current_time), 'a', encoding='utf-8')
-            # f.write(post_content)
-            # f.close()
-
             # 写入文件（合并保存）
-            f = open('weibo_save.txt', 'a', encoding='utf-8')
+            is_weibosave()
+            f = open('weibosave/weibo_save_{}.txt'.format(format_weibo_save_time()), 'a', encoding='utf-8')
             f.write(post_content)
             f.close()
 
             # 输出状态
             i += 1
-            capture = '捕捉到{}条动态。抓取时间：{}。\n'.format(i, ctime())
-            m = open('file_log.txt', 'a', encoding='utf-8')
+            capture = '捕捉到{}条动态。抓取时间：{}。\r\n'.format(i, format_time_now())
+            print(capture)
+            m = open('weibosave/weiboPY_running_log_{}.txt'.format(format_weibo_py_running_log_time()), 'a', encoding='utf-8')
             m.write(capture)
             m.close()
 
