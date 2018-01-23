@@ -151,8 +151,8 @@ def loginsina():
     global driver
     # 对应的是「登陆」
     print('LoginSina，正在登陆中……')
-    username = 'chengdaol@163.com'
-    password = 'G1TOkjTgCRhE'
+    username = ''
+    password = ''
 
     sleep(3)
     driver.find_element_by_id("loginName").click()
@@ -180,8 +180,8 @@ def welcomesina():
     driver.find_element_by_xpath("/html/body/div/div/a[2]").click()
     sleep(4)
 
-    username = 'chengdaol@163.com'
-    password = 'G1TOkjTgCRhE'
+    username = ''
+    password = ''
 
     sleep(3)
     driver.find_element_by_id("loginName").click()
