@@ -1,5 +1,8 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
 """
-    时间：2018-1-19 0:32:06
+    时间：2018-1-23 18:15:15
     作者：Ficko
     版本：
     1.0 可以爬取页面的第二篇微博，并正确print
@@ -10,20 +13,32 @@
     5.0 增加持续监控的能力，察觉变化并保存
         5.1 将 driver 改为无头浏览器（Firefox内核），添加了定时状态打印功能
     6.0 可以部署在服务器上
-        6.1 优化文件存储
+        6.1 优化 爬取文件和 log文件 的存储
+        6.2 记录出错信息，方便维护
+        6.3 添加虚拟显示 virtual display，避免在服务器上出错
+        6.4 为 webdriver 添加 Desired 数值，避免在服务器上出错
 """
 
 from selenium import webdriver
 from time import sleep
 from datetime import datetime
 from selenium.webdriver.firefox.options import Options
-import sys, os
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from pyvirtualdisplay import Display
+import sys, os, traceback
 
 # Variations.
 # 引用需要声明全局变量。
 # ___ER___ https://weibo.cn/508637358
 second_domain = '508637358'
 weibo_name = '___ER___'
+
+def save_to_log(info):
+    # 将 info 保存到日志文件中
+    is_weibosave()
+    m = open('weibosave/weiboPY_running_log_{}.txt'.format(format_weibo_py_running_log_time()), 'a', encoding='utf-8')
+    m.write(info)
+    m.close()
 
 
 def is_weibosave():
@@ -135,8 +150,9 @@ def getlatestposturl():
 def loginsina():
     global driver
     # 对应的是「登陆」
-    username = '<请自行填写>'
-    password = '<请自行填写>'
+    print('LoginSina，正在登陆中……')
+    username = 'chengdaol@163.com'
+    password = 'G1TOkjTgCRhE'
 
     sleep(3)
     driver.find_element_by_id("loginName").click()
@@ -148,9 +164,7 @@ def loginsina():
     log = '登陆成功！当前时间：{}。'.format(format_time_now())
     print(log)
     is_weibosave()
-    m = open('weibosave/weiboPY_running_log_{}.txt'.format(format_weibo_py_running_log_time()), 'a', encoding='utf-8')
-    m.write(log)
-    m.close()
+    save_to_log(log)
     sleep(3)
     """
         输入文本框如果带有placeholder属性，则使用 .clear() 功能会报错：
@@ -162,11 +176,12 @@ def loginsina():
 def welcomesina():
     global driver
     # 对应的是「欢迎登陆」
+    print('WelcomeSina，正在登陆中……')
     driver.find_element_by_xpath("/html/body/div/div/a[2]").click()
     sleep(4)
 
-    username = '<请自行填写>'
-    password = '<请自行填写>'
+    username = 'chengdaol@163.com'
+    password = 'G1TOkjTgCRhE'
 
     sleep(3)
     driver.find_element_by_id("loginName").click()
@@ -178,24 +193,41 @@ def welcomesina():
     log = '登陆成功！当前时间：{}。'.format(format_time_now())
     print(log)
     is_weibosave()
-    m = open('weibosave/weiboPY_running_log_{}.txt'.format(format_weibo_py_running_log_time()), 'a', encoding='utf-8')
-    m.write(log)
-    m.close()
+    save_to_log(log)
     sleep(3)
 
 
 def get_target_weibo():
+    driver.get('https://weibo.cn/{}'.format(second_domain))
+
+def boot_driver():
     global driver
-    # 获取微博主页内容。
+    # 添加虚拟显示
+    display = Display(visible=0, size=(800, 600))
+    display.start()
+
+    # 以下是在stackoverflow里看到的解决方法
+    # 我也不知道啥意思，但就是有用
+    firefox_capabilities = DesiredCapabilities.FIREFOX
+    firefox_capabilities['marionette'] = True
+    firefox_capabilities['binary'] = '/usr/bin/firefox'
+
     options = Options()
     options.add_argument('-headless')
-    driver = webdriver.Firefox(executable_path='geckodriver', firefox_options=options)
-    driver.get('https://weibo.cn/{}'.format(second_domain))
+    driver = webdriver.Firefox(capabilities=firefox_capabilities)
 
 
 if __name__ == '__main__':
     global driver
-    get_target_weibo()
+    # 获取微博主页内容。
+    boot_driver()
+    # 增加出错信息的打印
+    try:
+        get_target_weibo()
+    except Exception:
+        exc_info = traceback.format_exc()
+        print(exc_info, format_time_now())
+        save_to_log('\n'.join([exc_info, format_time_now()]))
 
     # 隐式等待时间
     driver.implicitly_wait(10)
@@ -229,11 +261,9 @@ if __name__ == '__main__':
                 is_weibosave()
                 log = '正在监控，已动态监测{}次，已捕捉到{}条动态。当前时间：{}。\r\n'.format(j, i, format_time_now())
                 print(log)
-                l = open('weibosave/weiboPY_running_log_{}.txt'.format(format_weibo_py_running_log_time()), 'a', encoding='utf-8')
-                l.write(log)
-                l.close()
+                save_to_log(log)
 
-            sleep(15)
+            sleep(10)
             continue
         else:
             driver.get(getlatestposturl()[0])
@@ -254,8 +284,6 @@ if __name__ == '__main__':
             i += 1
             capture = '捕捉到{}条动态。抓取时间：{}。\r\n'.format(i, format_time_now())
             print(capture)
-            m = open('weibosave/weiboPY_running_log_{}.txt'.format(format_weibo_py_running_log_time()), 'a', encoding='utf-8')
-            m.write(capture)
-            m.close()
+            save_to_log(capture)
 
     driver.quit()
