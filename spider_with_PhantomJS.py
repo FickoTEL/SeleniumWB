@@ -16,18 +16,47 @@
         6.1 优化 爬取文件和 log文件 的存储
         6.2 记录出错信息，方便维护
         6.3 添加虚拟显示 virtual display，避免在服务器上出错
+    7.0 改成了PhantomJS
+        7.1 更改了配置文件 DesiredCapabilities 的参数
+        7.2 添加了没卵用的请求头
+        7.3 更改了请求失败后的执行方式
 """
-
+import random
+import os
+import traceback
 from selenium import webdriver
 from time import sleep
 from datetime import datetime
-import sys, os, traceback
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+
 
 # Variations.
 # 引用需要声明全局变量。
 # ___ER___ https://weibo.cn/508637358
 second_domain = '508637358'
 weibo_name = '___ER___'
+
+# 伪装的请求头
+user_agent_list = [
+        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/22.0.1207.1 Safari/537.1"
+        "Mozilla/5.0 (X11; CrOS i686 2268.111.0) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11",
+        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.6 (KHTML, like Gecko) Chrome/20.0.1092.0 Safari/536.6",
+        "Mozilla/5.0 (Windows NT 6.2) AppleWebKit/536.6 (KHTML, like Gecko) Chrome/20.0.1090.0 Safari/536.6",
+        "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/19.77.34.5 Safari/537.1",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/536.5 (KHTML, like Gecko) Chrome/19.0.1084.9 Safari/536.5",
+        "Mozilla/5.0 (Windows NT 6.0) AppleWebKit/536.5 (KHTML, like Gecko) Chrome/19.0.1084.36 Safari/536.5",
+        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1063.0 Safari/536.3",
+        "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1063.0 Safari/536.3",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_0) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1063.0 Safari/536.3",
+        "Mozilla/5.0 (Windows NT 6.2) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1062.0 Safari/536.3",
+        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1062.0 Safari/536.3",
+        "Mozilla/5.0 (Windows NT 6.2) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1061.1 Safari/536.3",
+        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1061.1 Safari/536.3",
+        "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1061.1 Safari/536.3",
+        "Mozilla/5.0 (Windows NT 6.2) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1061.0 Safari/536.3",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.24 (KHTML, like Gecko) Chrome/19.0.1055.1 Safari/535.24",
+        "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/535.24 (KHTML, like Gecko) Chrome/19.0.1055.1 Safari/535.24"
+       ]
 
 def save_to_log(info):
     # 将 info 保存到日志文件中
@@ -198,6 +227,12 @@ def get_target_weibo():
 
 def boot_driver():
     global driver
+    dcap = dict(DesiredCapabilities.PHANTOMJS)
+    # 从USER_AGENTS列表中随机选一个浏览器头，伪装浏览器
+    dcap["phantomjs.page.settings.userAgent"] = (random.choice(user_agent_list))
+    # 不载入图片，爬页面速度会快很多
+    dcap["phantomjs.page.settings.loadImages"] = False
+
     driver = webdriver.PhantomJS()
 
 
@@ -211,7 +246,7 @@ if __name__ == '__main__':
     except Exception:
         exc_info = traceback.format_exc()
         print(exc_info, format_time_now())
-        save_to_log('\n'.join([exc_info, format_time_now()]))
+        save_to_log('\r\n'.join([exc_info, format_time_now()]))
 
     # 隐式等待时间
     driver.implicitly_wait(10)
@@ -233,7 +268,9 @@ if __name__ == '__main__':
             welcomesina()
             driver.get('https://weibo.cn/{}'.format(second_domain))
         else:
-            sys.exit('无法连接！程序退出。')
+            print('无法连接！等待 60s 后继续……\r\n')
+            sleep(60)
+            continue
 
         # ==========以下是子页面==========
         # 获得最近微博的全文页面
