@@ -1,6 +1,6 @@
 #! /bin/sh
 host_dir=`echo ~`
-proc_name=/root/weibojs.py"
+proc_name"/root/weibojs.py"
 log_name="/root/crontab_log.log"
 
 # 杀掉进程
