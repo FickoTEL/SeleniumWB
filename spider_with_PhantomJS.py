@@ -24,11 +24,16 @@
 import random
 import os
 import traceback
+import sys
+import io
 from selenium import webdriver
 from time import sleep
 from datetime import datetime
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
+
+# 开门大吉，预防编码错误「UnicodeEncodeError: 'ascii' codec can't encode characters」
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 # Variations.
 # 引用需要声明全局变量。
@@ -224,8 +229,8 @@ def loginsina():
     global driver
     # 对应的是「登陆」
     print('LoginSina，正在登陆中……')
-    username = 'chengdaol@163.com'
-    password = 'G1TOkjTgCRhE'
+    username = ''
+    password = ''
 
     sleep(3)
     driver.find_element_by_id("loginName").click()
@@ -253,8 +258,8 @@ def welcomesina():
     driver.find_element_by_xpath("/html/body/div/div/a[2]").click()
     sleep(4)
 
-    username = 'chengdaol@163.com'
-    password = 'G1TOkjTgCRhE'
+    username = ''
+    password = ''
 
     sleep(3)
     driver.find_element_by_id("loginName").click()
